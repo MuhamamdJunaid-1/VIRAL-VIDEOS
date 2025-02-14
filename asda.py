@@ -1,130 +1,73 @@
 import streamlit as st
 import requests
-from datetime import datetime, timedelta
+from collections import Counter
+import yake
+import re
 
-# YouTube API Key
-API_KEY = "AIzaSyB0Os-KIpWsjeWKbptWt6ujVprfN40x-AU"
+# YouTube API Setup
+API_KEY = st.secrets["API_KEY"]  # Set via Streamlit Secrets
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
-YOUTUBE_VIDEO_URL = "https://www.googleapis.com/youtube/v3/videos"
-YOUTUBE_CHANNEL_URL = "https://www.googleapis.com/youtube/v3/channels"
 
-# Streamlit App Title
-st.title("YouTube Viral Topics Tool")
+# Streamlit App
+st.title("🚀 YouTube Video SEO Optimizer")
 
-# Input Fields
-days = st.number_input("Enter Days to Search (1-30):", min_value=1, max_value=30, value=5)
+# User Input
+target_keyword = st.text_input("social security benefits' Trump Executive Order:")
+num_competitors = st.slider("20”)
 
-# List of broader keywords
-keywords = [  
- "Social Security", "SSDI", "Social Security update", "disability benefits", "retirement benefits",  
- "SSI", "senior citizens", "senior benefits", "social security checks", "Social Security news",  
- "financial relief", "Social Security payment", "social security increase", "government benefits",  
- "SSA update", "senior financial aid", "monthly payments", "stimulus update", "Social Security increase",  
- "federal benefits", "retirement income", "SSDI benefits", "economic relief", "Social Security checks",  
- "financial assistance", "retirement funds", "federal payments", "social security update",  
- "payment schedule", "Social Security stimulus", "stimulus checks", "government assistance",  
- "federal aid", "Social Security benefits", "direct deposit", "Social Security 2024", "SSDI payment",  
- "financial assistance 2025", "monthly benefits", "Social Security Update", "SSDI updates",  
- "Retirement Benefits", "Social Security News", "senior support", "financial support",  
- "government aid", "financial aid", "SSDI increase", "stimulus payment", "low-income assistance",  
- "seniors", "retirement support", "stimulus package", "social security boost", "direct deposit update",  
- "economic support", "social security", "stimulus check", "Social Security check", "Financial aid",  
- "Government payments", "Senior benefits", "Monthly benefits", "Stimulus update", "Retirement"  
-]  
-
-
-
-# Fetch Data Button
-if st.button("Fetch Data"):
-    try:
-        # Calculate date range
-        start_date = (datetime.utcnow() - timedelta(days=int(days))).isoformat("T") + "Z"
-        all_results = []
-
-        # Iterate over the list of keywords
-        for keyword in keywords:
-            st.write(f"Searching for keyword: {keyword}")
-
-            # Define search parameters
-            search_params = {
+if st.button("Generate SEO Recommendations"):
+    if not target_keyword:
+        st.warning("Please enter a keyword!")
+    else:
+        try:
+            # Fetch Top Competitor Videos
+            params = {
                 "part": "snippet",
-                "q": keyword,
+                "q": target_keyword,
                 "type": "video",
                 "order": "viewCount",
-                "publishedAfter": start_date,
-                "maxResults": 5,
-                "key": API_KEY,
+                "maxResults": num_competitors,
+                "key": API_KEY
             }
+            response = requests.get(YOUTUBE_SEARCH_URL, params=params).json()
 
-            # Fetch video data
-            response = requests.get(YOUTUBE_SEARCH_URL, params=search_params)
-            data = response.json()
+            if "items" not in response:
+                st.error("No videos found. Try a different keyword.")
+                st.stop()
 
-            # Check if "items" key exists
-            if "items" not in data or not data["items"]:
-                st.warning(f"No videos found for keyword: {keyword}")
-                continue
+            # Extract Titles & Descriptions
+            titles = []
+            descriptions = []
+            for item in response["items"]:
+                titles.append(item["snippet"]["title"])
+                descriptions.append(item["snippet"]["description"])
 
-            videos = data["items"]
-            video_ids = [video["id"]["videoId"] for video in videos if "id" in video and "videoId" in video["id"]]
-            channel_ids = [video["snippet"]["channelId"] for video in videos if "snippet" in video and "channelId" in video["snippet"]]
+            # YAKE Keyword Extraction
+            def extract_keywords(text_list):
+                kw_extractor = yake.KeywordExtractor(top=20)
+                all_keywords = []
+                for text in text_list:
+                    text_clean = re.sub(r'\W+', ' ', text.lower())
+                    keywords = kw_extractor.extract_keywords(text_clean)
+                    all_keywords.extend([kw[0] for kw in keywords])
+                return Counter(all_keywords).most_common(10)
 
-            if not video_ids or not channel_ids:
-                st.warning(f"Skipping keyword: {keyword} due to missing video/channel data.")
-                continue
+            # Get Recommendations
+            title_keywords = extract_keywords(titles)
+            desc_keywords = extract_keywords(descriptions)
 
-            # Fetch video statistics
-            stats_params = {"part": "statistics", "id": ",".join(video_ids), "key": API_KEY}
-            stats_response = requests.get(YOUTUBE_VIDEO_URL, params=stats_params)
-            stats_data = stats_response.json()
+            # Display Results
+            st.subheader("🔥 Top Title Keywords")
+            st.write("Use these in your video title:")
+            st.code(", ".join([kw[0] for kw in title_keywords]))
 
-            if "items" not in stats_data or not stats_data["items"]:
-                st.warning(f"Failed to fetch video statistics for keyword: {keyword}")
-                continue
+            st.subheader("📝 Top Description Keywords")
+            st.write("Include these in your description:")
+            st.code(", ".join([kw[0] for kw in desc_keywords]))
 
-            # Fetch channel statistics
-            channel_params = {"part": "statistics", "id": ",".join(channel_ids), "key": API_KEY}
-            channel_response = requests.get(YOUTUBE_CHANNEL_URL, params=channel_params)
-            channel_data = channel_response.json()
+            st.subheader("🏆 Top Ranking Competitors")
+            for idx, title in enumerate(titles[:5], 1):
+                st.write(f"{idx}. {title}")
 
-            if "items" not in channel_data or not channel_data["items"]:
-                st.warning(f"Failed to fetch channel statistics for keyword: {keyword}")
-                continue
-
-            stats = stats_data["items"]
-            channels = channel_data["items"]
-
-            # Collect results
-            for video, stat, channel in zip(videos, stats, channels):
-                title = video["snippet"].get("title", "N/A")
-                description = video["snippet"].get("description", "")[:200]
-                video_url = f"https://www.youtube.com/watch?v={video['id']['videoId']}"
-                views = int(stat["statistics"].get("viewCount", 0))
-                subs = int(channel["statistics"].get("subscriberCount", 0))
-
-                if subs < 1500:  # Only include channels with fewer than 1500 subscribers
-                    all_results.append({
-                        "Title": title,
-                        "Description": description,
-                        "URL": video_url,
-                        "Views": views,
-                        "Subscribers": subs
-                    })
-
-        # Display results
-        if all_results:
-            st.success(f"Found {len(all_results)} results across all keywords!")
-            for result in all_results:
-                st.markdown(
-                    f"**Title:** {result['Title']}  \n"
-                    f"**Description:** {result['Description']}  \n"
-                    f"**URL:** [Watch Video]({result['URL']})  \n"
-                    f"**Views:** {result['Views']}  \n"
-                    f"**Subscribers:** {result['Subscribers']}"
-                )
-                st.write("---")
-        else:
-            st.warning("No results found for channels with fewer than 1500 subscribers.")
-
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
