@@ -13,7 +13,7 @@ st.title("🚀 YouTube Video SEO Optimizer")
 
 # User Input
 target_keyword = st.text_input("social security benefits' Trump Executive Order:")
-num_competitors = st.slider("5”)
+num_competitors = st.slider("Number of competitor videos to analyze", min_value=5, max_value=20, value=10)
 
 if st.button("Generate SEO Recommendations"):
     if not target_keyword:
