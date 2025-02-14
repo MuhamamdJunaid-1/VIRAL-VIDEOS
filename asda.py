@@ -1,3 +1,20 @@
+Viral Topics Tool
+
+
+
+
+
+Make youtube API (Google Cloud Console, and then enable youtube APi services)
+Github repository 
+Make app on streamlit 
+Go to streamlit cloud
+Sign In
+Launch your app
+
+
+Code: 
+
+
 import streamlit as st
 import requests
 from datetime import datetime, timedelta
@@ -16,22 +33,20 @@ days = st.number_input("Enter Days to Search (1-30):", min_value=1, max_value=30
 
 # List of broader keywords
 keywords = [  
- "social security", "social security fairness act explained", "social security benefits",  
- "social security fairness act news", "social security fairness act update",  
- "social security fairness act 2025 who qualifies", "social security disability",  
- "social security 2025", "social security fairness act 2025", "social security increase",  
- "who gets social security increase", "social security increase 2025", "5100 social security",  
- "ssi payments", "ssi", "payments", "ssi increase", "ssi update", "social security payments",  
- "monthly payments", "two ssi payments", "ssdi payments", "ssa payments", "irs.gov get my payment",  
- "ssa ssi ssdi", "direct payments", "payment schedule", "payment dates", "ssa ssi ssdi increase",  
- "payments", "ssi and ssdi at the same time", "ssi benefits", "ssdi payment", "cash payments",  
- "stimulus update ssi", "ssdi payment info", "ssi benefit", "benefit payments", "600 payment",  
- "300 payment", "ssi ssdi stimulus check", "social security", "social security update",  
- "social security benefits", "social security news", "social security increase",  
- "social security 2024", "social security payments", "social security 2025", "social security boost",  
- "social security expansion", "social security disability", "social security fairness act",  
- "social security check", "social security program", "social security deposit",  
- "social security updates", "$5100 stimulus", "financial security", "social security recipients"  
+ "Social Security", "SSDI", "Social Security update", "disability benefits", "retirement benefits",  
+ "SSI", "senior citizens", "senior benefits", "social security checks", "Social Security news",  
+ "financial relief", "Social Security payment", "social security increase", "government benefits",  
+ "SSA update", "senior financial aid", "monthly payments", "stimulus update", "Social Security increase",  
+ "federal benefits", "retirement income", "SSDI benefits", "economic relief", "Social Security checks",  
+ "financial assistance", "retirement funds", "federal payments", "social security update",  
+ "payment schedule", "Social Security stimulus", "stimulus checks", "government assistance",  
+ "federal aid", "Social Security benefits", "direct deposit", "Social Security 2024", "SSDI payment",  
+ "financial assistance 2025", "monthly benefits", "Social Security Update", "SSDI updates",  
+ "Retirement Benefits", "Social Security News", "senior support", "financial support",  
+ "government aid", "financial aid", "SSDI increase", "stimulus payment", "low-income assistance",  
+ "seniors", "retirement support", "stimulus package", "social security boost", "direct deposit update",  
+ "economic support", "social security", "stimulus check", "Social Security check", "Financial aid",  
+ "Government payments", "Senior benefits", "Monthly benefits", "Stimulus update", "Retirement"  
 ]  
 
 
@@ -104,7 +119,7 @@ if st.button("Fetch Data"):
                 views = int(stat["statistics"].get("viewCount", 0))
                 subs = int(channel["statistics"].get("subscriberCount", 0))
 
-                if subs < 3000:  # Only include channels with fewer than 3,000 subscribers
+                if subs < 1500:  # Only include channels with fewer than 1500 subscribers
                     all_results.append({
                         "Title": title,
                         "Description": description,
@@ -126,7 +141,9 @@ if st.button("Fetch Data"):
                 )
                 st.write("---")
         else:
-            st.warning("No results found for channels with fewer than 3,000 subscribers.")
+            st.warning("No results found for channels with fewer than 1500 subscribers.")
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
+
+
